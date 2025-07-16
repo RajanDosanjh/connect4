@@ -1,20 +1,20 @@
+// algorithms.ts — fully patched with logging support
 import { Connect4 } from '../game/connect4';
 import type { Player } from '../game/connect4';
+import { logEvaluation } from '../evaluation';
 
-//  Utility function 
-export function evaluateBoard(game: Connect4, player: Player): number {
+let nodeCounter = 0;
+
+function evaluateBoard(game: Connect4, player: Player): number {
   if (game.winner === player) return 1000;
   if (game.winner === 'draw') return 0;
   if (game.winner && game.winner !== player) return -1000;
   return 0;
 }
 
-//  Minimax 
-export function minimax(game: Connect4, depth: number, maximizingPlayer: boolean, player: Player): number {
-  if (game.winner || depth === 0) {
-    return evaluateBoard(game, player);
-  }
-
+function minimax(game: Connect4, depth: number, maximizingPlayer: boolean, player: Player): number {
+  nodeCounter++;
+  if (game.winner || depth === 0) return evaluateBoard(game, player);
   const moves = game.getValidMoves();
   if (maximizingPlayer) {
     let maxEval = -Infinity;
@@ -39,6 +39,8 @@ export function minimax(game: Connect4, depth: number, maximizingPlayer: boolean
 
 export function getBestMoveMinimax(game: Connect4, depth: number): number {
   const player = game.currentPlayer;
+  nodeCounter = 0;
+  const start = performance.now();
   let bestScore = -Infinity;
   let bestMove = -1;
   for (const move of game.getValidMoves()) {
@@ -50,15 +52,14 @@ export function getBestMoveMinimax(game: Connect4, depth: number): number {
       bestMove = move;
     }
   }
+  const duration = performance.now() - start;
+  logEvaluation({ algorithm: 'minimax', depth, nodes: nodeCounter, timeMs: duration, winner: game.winner?.toString() || 'none', durationMs: duration });
   return bestMove;
 }
 
-//  Alpha-Beta Pruning 
-export function alphabeta(game: Connect4, depth: number, alpha: number, beta: number, maximizingPlayer: boolean, player: Player): number {
-  if (game.winner || depth === 0) {
-    return evaluateBoard(game, player);
-  }
-
+function alphabeta(game: Connect4, depth: number, alpha: number, beta: number, maximizingPlayer: boolean, player: Player): number {
+  nodeCounter++;
+  if (game.winner || depth === 0) return evaluateBoard(game, player);
   const moves = game.getValidMoves();
   if (maximizingPlayer) {
     let maxEval = -Infinity;
@@ -68,7 +69,7 @@ export function alphabeta(game: Connect4, depth: number, alpha: number, beta: nu
       const evalScore = alphabeta(newGame, depth - 1, alpha, beta, false, player);
       maxEval = Math.max(maxEval, evalScore);
       alpha = Math.max(alpha, evalScore);
-      if (beta <= alpha) break; // prune
+      if (beta <= alpha) break;
     }
     return maxEval;
   } else {
@@ -79,7 +80,7 @@ export function alphabeta(game: Connect4, depth: number, alpha: number, beta: nu
       const evalScore = alphabeta(newGame, depth - 1, alpha, beta, true, player);
       minEval = Math.min(minEval, evalScore);
       beta = Math.min(beta, evalScore);
-      if (beta <= alpha) break; // prune
+      if (beta <= alpha) break;
     }
     return minEval;
   }
@@ -87,6 +88,8 @@ export function alphabeta(game: Connect4, depth: number, alpha: number, beta: nu
 
 export function getBestMoveAlphaBeta(game: Connect4, depth: number): number {
   const player = game.currentPlayer;
+  nodeCounter = 0;
+  const start = performance.now();
   let bestScore = -Infinity;
   let bestMove = -1;
   for (const move of game.getValidMoves()) {
@@ -98,20 +101,14 @@ export function getBestMoveAlphaBeta(game: Connect4, depth: number): number {
       bestMove = move;
     }
   }
+  const duration = performance.now() - start;
+  logEvaluation({ algorithm: 'alphabeta', depth, nodes: nodeCounter, timeMs: duration, winner: game.winner?.toString() || 'none', durationMs: duration });
   return bestMove;
 }
 
-//  Expectiminimax 
-export function expectiminimax(
-  game: Connect4,
-  depth: number,
-  nodeType: 'max' | 'min' | 'chance',
-  player: Player
-): number {
-  if (game.winner || depth === 0) {
-    return evaluateBoard(game, player);
-  }
-
+function expectiminimax(game: Connect4, depth: number, nodeType: 'max' | 'min' | 'chance', player: Player): number {
+  nodeCounter++;
+  if (game.winner || depth === 0) return evaluateBoard(game, player);
   const moves = game.getValidMoves();
   if (nodeType === 'max') {
     let maxEval = -Infinity;
@@ -127,12 +124,11 @@ export function expectiminimax(
     for (const move of moves) {
       const newGame = game.clone();
       newGame.makeMove(move);
-      const evalScore = expectiminimax(newGame, depth - 1, 'max', player);
+      const evalScore = expectiminimax(newGame, depth - 1, 'chance', player);
       minEval = Math.min(minEval, evalScore);
     }
     return minEval;
   } else {
-    // Chance node 
     let total = 0;
     for (const move of moves) {
       const newGame = game.clone();
@@ -145,6 +141,8 @@ export function expectiminimax(
 
 export function getBestMoveExpectiminimax(game: Connect4, depth: number): number {
   const player = game.currentPlayer;
+  nodeCounter = 0;
+  const start = performance.now();
   let bestScore = -Infinity;
   let bestMove = -1;
   for (const move of game.getValidMoves()) {
@@ -156,5 +154,7 @@ export function getBestMoveExpectiminimax(game: Connect4, depth: number): number
       bestMove = move;
     }
   }
+  const duration = performance.now() - start;
+  logEvaluation({ algorithm: 'expectiminimax', depth, nodes: nodeCounter, timeMs: duration, winner: game.winner?.toString() || 'none', durationMs: duration });
   return bestMove;
 }
