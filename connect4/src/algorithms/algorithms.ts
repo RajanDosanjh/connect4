@@ -1,7 +1,7 @@
 // algorithms.ts — fully patched with logging support
 import { Connect4 } from '../game/connect4';
 import type { Player } from '../game/connect4';
-import { logEvaluation } from '../evaluation';
+import { logEvaluation, determineBoardSize } from '../evaluation';
 
 let nodeCounter = 0;
 
@@ -53,7 +53,8 @@ export function getBestMoveMinimax(game: Connect4, depth: number): number {
     }
   }
   const duration = performance.now() - start;
-  logEvaluation({ algorithm: 'minimax', depth, nodes: nodeCounter, timeMs: duration, winner: game.winner?.toString() || 'none', durationMs: duration });
+  const boardSize = determineBoardSize(game.rows, game.cols);
+  logEvaluation({ algorithm: 'minimax', depth, nodes: nodeCounter, timeMs: duration, winner: game.winner?.toString() || 'none', durationMs: duration, boardSize });
   return bestMove;
 }
 
@@ -102,7 +103,8 @@ export function getBestMoveAlphaBeta(game: Connect4, depth: number): number {
     }
   }
   const duration = performance.now() - start;
-  logEvaluation({ algorithm: 'alphabeta', depth, nodes: nodeCounter, timeMs: duration, winner: game.winner?.toString() || 'none', durationMs: duration });
+  const boardSize = determineBoardSize(game.rows, game.cols);
+  logEvaluation({ algorithm: 'alphabeta', depth, nodes: nodeCounter, timeMs: duration, winner: game.winner?.toString() || 'none', durationMs: duration, boardSize });
   return bestMove;
 }
 
@@ -155,6 +157,7 @@ export function getBestMoveExpectiminimax(game: Connect4, depth: number): number
     }
   }
   const duration = performance.now() - start;
-  logEvaluation({ algorithm: 'expectiminimax', depth, nodes: nodeCounter, timeMs: duration, winner: game.winner?.toString() || 'none', durationMs: duration });
+  const boardSize = determineBoardSize(game.rows, game.cols);
+  logEvaluation({ algorithm: 'expectiminimax', depth, nodes: nodeCounter, timeMs: duration, winner: game.winner?.toString() || 'none', durationMs: duration, boardSize });
   return bestMove;
 }

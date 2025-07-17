@@ -1,3 +1,4 @@
+// App.tsx
 import { useState, useEffect } from "react";
 import { Connect4 } from "./game/connect4";
 import { Board } from "./components/Board";
@@ -8,15 +9,30 @@ import {
 } from "./algorithms/algorithms";
 import { geminiAI } from "./game/geminiAI";
 import "./App.css";
-import { logEvaluation, downloadEvaluationCSV } from "./evaluation";
-
-const gameInstance = new Connect4();
+import { downloadEvaluationCSV } from "./evaluation";
 
 function App() {
-  const [game, setGame] = useState(() => gameInstance.clone());
+  const [boardSize, setBoardSize] = useState({ rows: 6, cols: 7 });
+  const [game, setGame] = useState(
+    () => new Connect4(boardSize.rows, boardSize.cols)
+  );
   const [algorithm, setAlgorithm] = useState("alphabeta");
   const [difficulty, setDifficulty] = useState<number | string>(4);
   const [isAIThinking, setIsAIThinking] = useState(false);
+
+  const getBoardSizeLabel = (rows: number, cols: number): string => {
+    if (rows === 5 && cols === 4) return "small";
+    if (rows === 6 && cols === 7) return "default";
+    if (rows === 7 && cols === 9) return "large";
+    return `${rows}x${cols}`;
+  };
+
+  const handleBoardSizeChange = (size: string) => {
+    const [rows, cols] = size.split("x").map(Number);
+    const newGame = new Connect4(rows, cols);
+    setBoardSize({ rows, cols });
+    setGame(newGame);
+  };
 
   const handleColumnClick = async (col: number) => {
     if (game.winner || game.currentPlayer !== 1 || isAIThinking) return;
@@ -25,40 +41,14 @@ function App() {
     if (newGame.makeMove(col)) {
       setGame(newGame);
 
-      if (newGame.winner) {
-        return;
-      }
+      if (newGame.winner) return;
 
-      // AI Turn
       setIsAIThinking(true);
       setTimeout(async () => {
         const aiGame = newGame.clone();
         if (!aiGame.winner && aiGame.currentPlayer === 2) {
-          const start = performance.now();
-          const aiMove = await getAIMove(aiGame);
-          const duration = performance.now() - start;
-
+          const { move: aiMove } = await getAIMove(aiGame);
           aiGame.makeMove(aiMove);
-
-          //  Log after the move is applied
-          if (aiGame.winner) {
-            logEvaluation({
-              algorithm,
-              depth: difficulty,
-              nodes: 0,
-              timeMs: duration,
-              winner:
-                aiGame.winner === "draw"
-                  ? "0"
-                  : aiGame.winner === 1
-                  ? "1"
-                  : aiGame.winner === 2
-                  ? "2"
-                  : "none",
-              durationMs: duration,
-            });
-          }
-
           setGame(aiGame);
         }
         setIsAIThinking(false);
@@ -67,45 +57,37 @@ function App() {
   };
 
   const handleReset = () => {
-    const newGame = game.clone();
-    newGame.reset();
+    const newGame = new Connect4(boardSize.rows, boardSize.cols);
     setGame(newGame);
   };
 
-  const getAIMove = async (state: Connect4): Promise<number> => {
+  const getAIMove = async (
+    state: Connect4
+  ): Promise<{ move: number; nodes: number }> => {
     if (algorithm === "gemini") {
       const aiDifficulty = difficulty as "easy" | "hard";
-      const start = performance.now();
       const move = await geminiAI.getBestMove(state, aiDifficulty);
-      const duration = performance.now() - start;
-      logEvaluation({
-        algorithm: "gemini",
-        depth: aiDifficulty,
-        nodes: 0,
-        timeMs: duration,
-        winner:
-          game.winner === "draw"
-            ? "0"
-            : game.winner === 1
-            ? "1"
-            : game.winner === 2
-            ? "2"
-            : "none",
-        durationMs: duration,
-      });
-      return move;
+      return { move, nodes: 0 };
     }
 
     const numericDifficulty = difficulty as number;
     switch (algorithm) {
-      case "minimax":
-        return getBestMoveMinimax(state, numericDifficulty);
-      case "alphabeta":
-        return getBestMoveAlphaBeta(state, numericDifficulty);
-      case "expectiminimax":
-        return getBestMoveExpectiminimax(state, numericDifficulty);
-      default:
-        return getBestMoveAlphaBeta(state, numericDifficulty);
+      case "minimax": {
+        const result = getBestMoveMinimax(state, numericDifficulty);
+        return typeof result === "object" ? result : { move: result, nodes: 0 };
+      }
+      case "alphabeta": {
+        const result = getBestMoveAlphaBeta(state, numericDifficulty);
+        return typeof result === "object" ? result : { move: result, nodes: 0 };
+      }
+      case "expectiminimax": {
+        const result = getBestMoveExpectiminimax(state, numericDifficulty);
+        return typeof result === "object" ? result : { move: result, nodes: 0 };
+      }
+      default: {
+        const result = getBestMoveAlphaBeta(state, numericDifficulty);
+        return typeof result === "object" ? result : { move: result, nodes: 0 };
+      }
     }
   };
 
@@ -121,7 +103,6 @@ function App() {
   }
 
   useEffect(() => {
-    // Reset difficulty when algorithm changes
     if (algorithm === "gemini" && typeof difficulty === "number") {
       setDifficulty("easy");
     } else if (algorithm !== "gemini" && typeof difficulty === "string") {
@@ -132,6 +113,22 @@ function App() {
   return (
     <div className="App" style={{ textAlign: "center", marginTop: 40 }}>
       <h1>Connect 4</h1>
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ color: "white", fontWeight: 500 }}>
+          Board Size:
+          <select
+            value={`${boardSize.rows}x${boardSize.cols}`}
+            onChange={(e) => handleBoardSizeChange(e.target.value)}
+            style={{ marginLeft: 8 }}
+          >
+            <option value="5x4">Small (5x4)</option>
+            <option value="6x7">Default (6x7)</option>
+            <option value="7x9">Large (7x9)</option>
+          </select>
+        </label>
+      </div>
+
       <Board
         board={game.board}
         onColumnClick={handleColumnClick}
@@ -140,8 +137,12 @@ function App() {
         difficulty={difficulty}
         onAlgorithmChange={setAlgorithm}
         onDifficultyChange={setDifficulty}
+        rows={boardSize.rows}
+        cols={boardSize.cols}
       />
+
       <div style={{ margin: "16px 0", fontSize: 20 }}>{status}</div>
+
       <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
         <button
           onClick={handleReset}

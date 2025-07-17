@@ -1,16 +1,17 @@
-import React from 'react';
-import { COLS, ROWS } from '../game/connect4';
-import type { Board as BoardType, Player } from '../game/connect4';
-
+// Board.tsx
+import React from "react";
+import type { Board as BoardType, Player } from "../game/connect4";
 
 interface BoardProps {
   board: BoardType;
   onColumnClick: (col: number) => void;
-  winner: Player | 'draw';
+  winner: Player | "draw";
   algorithm: string;
   difficulty: number | string;
   onAlgorithmChange: (algo: string) => void;
   onDifficultyChange: (depth: number | string) => void;
+  rows: number;
+  cols: number;
 }
 
 export const Board: React.FC<BoardProps> = ({
@@ -21,26 +22,26 @@ export const Board: React.FC<BoardProps> = ({
   difficulty,
   onAlgorithmChange,
   onDifficultyChange,
+  rows,
+  cols,
 }) => {
-  const isGeminiAI = algorithm === 'gemini';
+  const isGeminiAI = algorithm === "gemini";
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-    }}>
-      {/* Centered Algorithm + Difficulty Select */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 32,
-        marginBottom: 16,
-        width: 328,
-      }}>
-        <label style={{ color: 'white', fontWeight: 500 }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 32,
+          marginBottom: 16,
+        }}
+      >
+        <label style={{ color: "white", fontWeight: 500 }}>
           Algorithm:
           <select
             value={algorithm}
@@ -53,7 +54,7 @@ export const Board: React.FC<BoardProps> = ({
             <option value="gemini">Gemini AI</option>
           </select>
         </label>
-        <label style={{ color: 'white', fontWeight: 500 }}>
+        <label style={{ color: "white", fontWeight: 500 }}>
           Difficulty:
           <select
             value={difficulty}
@@ -82,32 +83,32 @@ export const Board: React.FC<BoardProps> = ({
         </label>
       </div>
 
-      {/* Board and Column Buttons in one grid container */}
-      <div style={{
-        width: 328,
-        background: '#1877c9',
-        padding: 16,
-        borderRadius: 8,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}>
-        {/* AI Info (moved above columns) */}
+      <div
+        style={{
+          background: "#1877c9",
+          padding: 16,
+          borderRadius: 8,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         {isGeminiAI && (
-          <div style={{ marginBottom: 8, textAlign: 'center', width: '100%' }}>
-            <span style={{ color: 'white', fontSize: 14, fontStyle: 'italic' }}>
+          <div style={{ marginBottom: 8, textAlign: "center", width: "100%" }}>
+            <span style={{ color: "white", fontSize: 14, fontStyle: "italic" }}>
               Playing against Gemini AI ({difficulty} mode)
             </span>
           </div>
         )}
-        {/* Column Buttons */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${COLS}, 40px)`,
-          gap: 4,
-          marginBottom: 8,
-        }}>
-          {Array.from({ length: COLS }).map((_, col) => (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${cols}, 40px)`,
+            gap: 4,
+            marginBottom: 8,
+          }}
+        >
+          {Array.from({ length: cols }).map((_, col) => (
             <button
               key={col}
               onClick={() => onColumnClick(col)}
@@ -116,12 +117,12 @@ export const Board: React.FC<BoardProps> = ({
                 width: 40,
                 height: 32,
                 fontSize: 16,
-                fontWeight: 'bold',
-                background: '#e3eaf2',
-                border: 'none',
+                fontWeight: "bold",
+                background: "#e3eaf2",
+                border: "none",
                 borderRadius: 6,
                 margin: 0,
-                cursor: winner ? 'not-allowed' : 'pointer',
+                cursor: winner ? "not-allowed" : "pointer",
               }}
               aria-label={`Drop in column ${col + 1}`}
             >
@@ -129,32 +130,36 @@ export const Board: React.FC<BoardProps> = ({
             </button>
           ))}
         </div>
-        {/* Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${COLS}, 40px)`,
-          gap: 4,
-        }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${cols}, 40px)`,
+            gap: 4,
+          }}
+        >
           {board.map((row, rowIdx) =>
             row.map((cell, colIdx) => (
               <div
-                key={rowIdx + '-' + colIdx}
+                key={rowIdx + "-" + colIdx}
                 style={{
                   width: 40,
                   height: 40,
-                  borderRadius: '50%',
-                  background: cell === 0 ? '#fff' : cell === 1 ? '#f00' : '#ff0',
-                  border: '2px solid #1877c9',
-                  boxSizing: 'border-box',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
+                  borderRadius: "50%",
+                  background:
+                    cell === 0 ? "#fff" : cell === 1 ? "#f00" : "#ff0",
+                  border: "2px solid #1877c9",
+                  boxSizing: "border-box",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: "bold",
                   fontSize: 18,
                 }}
-                aria-label={cell === 0 ? 'Empty' : cell === 1 ? 'Red' : 'Yellow'}
+                aria-label={
+                  cell === 0 ? "Empty" : cell === 1 ? "Red" : "Yellow"
+                }
               >
-                {cell === 0 ? '' : '●'}
+                {cell === 0 ? "" : "●"}
               </div>
             ))
           )}
@@ -162,4 +167,4 @@ export const Board: React.FC<BoardProps> = ({
       </div>
     </div>
   );
-}; 
+};
